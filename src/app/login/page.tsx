@@ -35,7 +35,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center gap-2 text-center">
-          <img src="/logo.png" alt="Logo" className="h-16 object-contain mx-auto mb-2" />
+          <img src="/logo.png" alt="Logo" className="h-36 w-auto object-contain mx-auto -mb-2 scale-110" />
           <h1 className="text-2xl font-semibold tracking-tight">SL Natural Spice & Herbal Products</h1>
           <p className="text-sm text-slate-500">Enterprise Resource Planning System</p>
         </div>
