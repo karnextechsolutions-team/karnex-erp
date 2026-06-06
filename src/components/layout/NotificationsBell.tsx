@@ -37,7 +37,7 @@ export default function NotificationsBell({ userId }: NotificationsBellProps) {
 
       if (!error && data) {
         setNotifications(data)
-        setUnreadCount(data.filter(n => !n.read).length)
+        setUnreadCount(data.filter((n: any) => !n.read).length)
       }
     }
 
@@ -49,7 +49,7 @@ export default function NotificationsBell({ userId }: NotificationsBellProps) {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
-        (payload) => {
+        (payload: any) => {
           setNotifications(prev => [payload.new as Notification, ...prev])
           setUnreadCount(prev => prev + 1)
           toast(payload.new.title, { description: payload.new.message })
@@ -102,6 +102,7 @@ export default function NotificationsBell({ userId }: NotificationsBellProps) {
 
   return (
     <DropdownMenu>
+      {/* @ts-ignore */}
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative text-slate-500 hover:text-slate-900 focus:outline-none focus:ring-0">
           <Bell className="w-5 h-5" />

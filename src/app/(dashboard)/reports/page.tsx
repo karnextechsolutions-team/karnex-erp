@@ -33,12 +33,12 @@ export default function ReportsPage() {
         
         if (sales) {
           const monthly: Record<string, number> = {}
-          sales.forEach(so => {
+          sales.forEach((so: any) => {
             const date = new Date(so.order_date)
             const monthStr = date.toLocaleString('default', { month: 'short' }) + ' ' + date.getFullYear()
             monthly[monthStr] = (monthly[monthStr] || 0) + Number(so.total_amount)
           })
-          const salesArr = Object.entries(monthly).map(([name, amount]) => ({ name, amount }))
+          const salesArr = Object.entries(monthly).map(([name, amount]: any) => ({ name, amount }))
           // Take last 6 months
           setSalesData(salesArr.slice(-6))
         }
@@ -50,13 +50,13 @@ export default function ReportsPage() {
         
         if (soItems) {
           const productMap: Record<string, number> = {}
-          soItems.forEach(item => {
+          soItems.forEach((item: any) => {
             const pName = item.products?.name || 'Unknown'
             productMap[pName] = (productMap[pName] || 0) + item.quantity
           })
           const prodArr = Object.entries(productMap)
-            .map(([name, quantity]) => ({ name, quantity }))
-            .sort((a, b) => b.quantity - a.quantity)
+            .map(([name, quantity]: any) => ({ name, quantity }))
+            .sort((a: any, b: any) => b.quantity - a.quantity)
             .slice(0, 5) // Top 5
           setProductsData(prodArr)
         }
@@ -73,7 +73,7 @@ export default function ReportsPage() {
             'planned': 0,
             'cancelled': 0
           }
-          wos.forEach(wo => {
+          wos.forEach((wo: any) => {
             if (statusMap[wo.status] !== undefined) {
               statusMap[wo.status] += 1
             }
@@ -83,7 +83,7 @@ export default function ReportsPage() {
             { name: 'In Progress', value: statusMap['in_progress'] },
             { name: 'Planned', value: statusMap['planned'] },
             { name: 'Cancelled', value: statusMap['cancelled'] }
-          ].filter(item => item.value > 0)
+          ].filter((item: any) => item.value > 0)
           setWoData(woArr)
         }
 
@@ -94,13 +94,13 @@ export default function ReportsPage() {
         
         if (pos) {
           const supplierMap: Record<string, number> = {}
-          pos.forEach(po => {
+          pos.forEach((po: any) => {
             const sName = po.suppliers?.name || 'Unknown'
             supplierMap[sName] = (supplierMap[sName] || 0) + Number(po.total_amount)
           })
           const suppArr = Object.entries(supplierMap)
-            .map(([name, spend]) => ({ name, spend }))
-            .sort((a, b) => b.spend - a.spend)
+            .map(([name, spend]: any) => ({ name, spend }))
+            .sort((a: any, b: any) => b.spend - a.spend)
             .slice(0, 5) // Top 5
           setSupplierData(suppArr)
         }
@@ -158,7 +158,7 @@ export default function ReportsPage() {
                   <Tooltip 
                     cursor={{ stroke: '#e2e8f0', strokeWidth: 1, strokeDasharray: '5 5' }}
                     contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    formatter={(value: number) => [`LKR ${value.toLocaleString()}`, 'Revenue']}
+                    formatter={(value: any) => [`LKR ${value.toLocaleString()}`, 'Revenue']}
                   />
                   <Line type="monotone" dataKey="amount" stroke="#2D6A4F" strokeWidth={3} dot={{ r: 4, fill: '#2D6A4F', strokeWidth: 0 }} activeDot={{ r: 6, strokeWidth: 0 }} />
                 </LineChart>
@@ -190,7 +190,7 @@ export default function ReportsPage() {
                   <Tooltip 
                     cursor={{ fill: '#f8fafc' }}
                     contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                    formatter={(value: number) => [value, 'Units Sold']}
+                    formatter={(value: any) => [value, 'Units Sold']}
                   />
                   <Bar dataKey="quantity" fill="#3B82F6" radius={[0, 4, 4, 0]} barSize={24} />
                 </BarChart>
@@ -225,13 +225,13 @@ export default function ReportsPage() {
                     paddingAngle={2}
                     dataKey="value"
                   >
-                    {woData.map((entry, index) => (
+                    {woData.map((entry: any, index: any) => (
                       <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                    formatter={(value: number) => [value, 'Work Orders']}
+                    formatter={(value: any) => [value, 'Work Orders']}
                   />
                   <Legend verticalAlign="bottom" height={36} iconType="circle" />
                 </PieChart>
@@ -268,10 +268,10 @@ export default function ReportsPage() {
                   <Tooltip 
                     cursor={{ fill: '#f8fafc' }}
                     contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                    formatter={(value: number) => [`LKR ${value.toLocaleString()}`, 'Spend']}
+                    formatter={(value: any) => [`LKR ${value.toLocaleString()}`, 'Spend']}
                   />
                   <Bar dataKey="spend" fill="#8B5CF6" radius={[4, 4, 0, 0]} barSize={40}>
-                    {supplierData.map((entry, index) => (
+                    {supplierData.map((entry: any, index: any) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Bar>
