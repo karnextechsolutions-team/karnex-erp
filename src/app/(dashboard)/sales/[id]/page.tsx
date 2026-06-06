@@ -170,20 +170,39 @@ export default function SalesOrderDetailPage() {
     const supabase = createClient() as any
 
     try {
-      const { data: invNumber, error: rpcErr } = await supabase.rpc('generate_invoice_number')
-      if (rpcErr) throw new Error(rpcErr.message)
+      // Check if invoice already exists for this SO
+      const { data: existing } = await supabase
+        .from('invoices')
+        .select('id, invoice_number')
+        .eq('so_id', order.id)
+        .single()
+      
+      if (existing) {
+        toast.error(`Invoice ${existing.invoice_number} already exists for this order`)
+        setGeneratingInvoice(false)
+        return
+      }
+
+      // Generate invoice number
+      const year = new Date().getFullYear().toString().slice(-2)
+      const random = Math.floor(1000 + Math.random() * 9000)
+      const invoiceNumber = `INV-${year}-${random}`
+
+      // Due date = 30 days from today
+      const dueDate = new Date()
+      dueDate.setDate(dueDate.getDate() + 30)
+      const dueDateStr = dueDate.toISOString().split('T')[0]
 
       const { data: newInvoice, error: invErr } = await supabase
         .from('invoices')
         .insert({
-          invoice_number: invNumber as string,
+          invoice_number: invoiceNumber,
           so_id:          order.id,
           invoice_date:   new Date().toISOString().split('T')[0],
-          due_date:       null,
+          due_date:       dueDateStr,
           status:         'unpaid',
           total_amount:   order.total_amount,
           amount_paid:    0,
-          balance:        order.total_amount,
           notes:          null,
         })
         .select()
@@ -193,7 +212,9 @@ export default function SalesOrderDetailPage() {
 
       setInvoice(newInvoice as Invoice)
       setInvoiceDialogOpen(true)
-      toast.success(`Invoice ${invNumber} generated`)
+      toast.success(`Invoice ${invoiceNumber} generated`)
+      
+      load() // Refresh
     } catch (err: unknown) {
       toast.error('Failed to generate invoice', { description: err instanceof Error ? err.message : 'Unknown error' })
     } finally {
