@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { 
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
 import { TrendingUp, Package, Factory, Truck } from 'lucide-react'
 import PageHeader from '@/components/shared/PageHeader'
@@ -30,7 +30,7 @@ export default function ReportsPage() {
           .from('sales_orders')
           .select('order_date, total_amount')
           .order('order_date', { ascending: true })
-        
+
         if (sales) {
           const monthly: Record<string, number> = {}
           sales.forEach((so: any) => {
@@ -47,7 +47,7 @@ export default function ReportsPage() {
         const { data: soItems } = await supabase
           .from('so_items')
           .select('quantity, products(name)')
-        
+
         if (soItems) {
           const productMap: Record<string, number> = {}
           soItems.forEach((item: any) => {
@@ -65,7 +65,7 @@ export default function ReportsPage() {
         const { data: wos } = await supabase
           .from('work_orders')
           .select('status')
-        
+
         if (wos) {
           const statusMap: Record<string, number> = {
             'completed': 0,
@@ -91,7 +91,7 @@ export default function ReportsPage() {
         const { data: pos } = await supabase
           .from('purchase_orders')
           .select('total_amount, suppliers(name)')
-        
+
         if (pos) {
           const supplierMap: Record<string, number> = {}
           pos.forEach((po: any) => {
@@ -131,7 +131,7 @@ export default function ReportsPage() {
       <PageHeader title="Reports & Analytics" description="Key performance indicators and business intelligence" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         {/* Sales Revenue Chart */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center gap-2 mb-6">
@@ -149,13 +149,13 @@ export default function ReportsPage() {
                 <LineChart data={salesData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 12, fill: '#64748b' }} 
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: '#64748b' }}
                     tickFormatter={(val) => `LKR ${(val / 1000).toFixed(0)}k`}
                   />
-                  <Tooltip 
+                  <Tooltip
                     cursor={{ stroke: '#e2e8f0', strokeWidth: 1, strokeDasharray: '5 5' }}
                     contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     formatter={(value: any) => [`LKR ${value.toLocaleString()}`, 'Revenue']}
@@ -187,7 +187,7 @@ export default function ReportsPage() {
                   <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
                   <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} width={100} />
-                  <Tooltip 
+                  <Tooltip
                     cursor={{ fill: '#f8fafc' }}
                     contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
                     formatter={(value: any) => [value, 'Units Sold']}
@@ -229,7 +229,7 @@ export default function ReportsPage() {
                       <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
                     formatter={(value: any) => [value, 'Work Orders']}
                   />
@@ -259,13 +259,13 @@ export default function ReportsPage() {
                 <BarChart data={supplierData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 12, fill: '#64748b' }} 
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: '#64748b' }}
                     tickFormatter={(val) => `LKR ${(val / 1000).toFixed(0)}k`}
                   />
-                  <Tooltip 
+                  <Tooltip
                     cursor={{ fill: '#f8fafc' }}
                     contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
                     formatter={(value: any) => [`LKR ${value.toLocaleString()}`, 'Spend']}
