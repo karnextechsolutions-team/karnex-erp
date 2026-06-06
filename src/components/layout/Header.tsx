@@ -1,18 +1,15 @@
 'use client'
 
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { LogOut, User, Menu } from 'lucide-react'
 import { toast } from 'sonner'
-import type { Profile } from '@/types/database'
-import NotificationsBell from './NotificationsBell'
-import { COMPANY } from '@/lib/company'
+import { Menu, Bell, LogOut, User, Settings, ChevronDown } from 'lucide-react'
+
+interface HeaderProps {
+  profile: any
+  onMenuToggle: () => void
+}
 
 const roleColors: Record<string, string> = {
   admin: 'bg-red-100 text-red-700',
@@ -23,81 +20,146 @@ const roleColors: Record<string, string> = {
   viewer: 'bg-slate-100 text-slate-600',
 }
 
-interface HeaderProps {
-  profile: Profile | null
-  onMenuToggle?: () => void
-}
-
 export default function Header({ profile, onMenuToggle }: HeaderProps) {
   const router = useRouter()
-  const supabase = createClient()
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const initials = profile?.full_name
     ?.split(' ')
-    .map(n => n[0])
+    .map((n: string) => n[0])
     .join('')
     .toUpperCase()
-    .slice(0, 2) ?? COMPANY.shortName.slice(0, 2).toUpperCase()
+    .slice(0, 2) ?? 'NU'
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
-    toast.success('Signed out successfully')
-    router.push('/login')
+    try {
+      setDropdownOpen(false)
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      toast.success('Signed out successfully')
+      router.push('/login')
+    } catch (error) {
+      toast.error('Failed to sign out')
+    }
+  }
+
+  function handleSettings() {
+    setDropdownOpen(false)
+    router.push('/settings')
   }
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 h-14">
-      {/* Left side: Hamburger button on mobile, empty space on desktop */}
+    <header className="sticky top-0 z-30 flex items-center justify-between
+      px-4 py-3 bg-white border-b border-gray-200 h-14 shrink-0">
+
+      {/* Left: hamburger on mobile */}
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuToggle}
-          className="md:hidden p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-          aria-label="Toggle sidebar"
+          className="md:hidden p-2 text-gray-500 hover:text-gray-900
+            hover:bg-gray-100 rounded-lg transition-colors"
+          aria-label="Toggle menu"
         >
           <Menu className="w-5 h-5" />
         </button>
         <span className="text-sm font-semibold text-gray-800 md:hidden">
-          {COMPANY.shortName} ERP
+          SL Natural ERP
         </span>
       </div>
 
-      {/* Right side: Bell notification and profile actions */}
-      <div className="flex items-center gap-3">
-        <NotificationsBell userId={profile?.id} />
+      {/* Right: bell + avatar dropdown */}
+      <div className="flex items-center gap-2">
 
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button variant="ghost" className="flex items-center gap-2 px-1 md:px-2 h-auto py-1 hover:bg-slate-100 rounded-lg">
-                <Avatar className="w-7 h-7">
-                  <AvatarFallback className="bg-[#2D6A4F] text-white text-xs font-semibold">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium leading-none text-slate-700">{profile?.full_name ?? 'User'}</p>
-                </div>
-              </Button>
-            }
-          />
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel className="font-normal">
-              <p className="text-sm font-medium text-slate-800">{profile?.full_name}</p>
-              <p className="text-xs text-slate-500 truncate">{profile?.email}</p>
-              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-1.5 capitalize ${roleColors[profile?.role ?? 'viewer']}`}>
-                {profile?.role}
-              </span>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" /> My profile
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
-              <LogOut className="mr-2 h-4 w-4" /> Sign out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Notification bell */}
+        <button
+          className="p-2 text-gray-400 hover:text-gray-600
+            hover:bg-gray-100 rounded-lg transition-colors"
+          aria-label="Notifications"
+        >
+          <Bell className="w-4 h-4" />
+        </button>
+
+        {/* Avatar dropdown */}
+        <div ref={dropdownRef} className="relative">
+          <button
+            onClick={() => setDropdownOpen(prev => !prev)}
+            className="flex items-center gap-2 px-2 py-1.5 rounded-lg
+              hover:bg-gray-100 transition-colors"
+            aria-label="User menu"
+          >
+            {/* Avatar circle */}
+            <div className="w-8 h-8 rounded-full bg-green-700 text-white
+              flex items-center justify-center text-sm font-semibold shrink-0">
+              {initials}
+            </div>
+            {/* Name - hidden on mobile */}
+            <div className="hidden sm:block text-left">
+              <p className="text-sm font-medium text-gray-900 leading-none">
+                {profile?.full_name ?? 'User'}
+              </p>
+            </div>
+            <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${
+              dropdownOpen ? 'rotate-180' : ''
+            }`} />
+          </button>
+
+          {/* Dropdown menu */}
+          {dropdownOpen && (
+            <div className="absolute right-0 top-full mt-1 w-56 bg-white
+              border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+
+              {/* User info header */}
+              <div className="px-4 py-3 border-b border-gray-100">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {profile?.full_name ?? 'User'}
+                </p>
+                <p className="text-xs text-gray-400 truncate mt-0.5">
+                  {profile?.email ?? ''}
+                </p>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded
+                  text-xs font-medium mt-1.5 capitalize
+                  ${roleColors[profile?.role ?? 'viewer']}`}>
+                  {profile?.role ?? 'viewer'}
+                </span>
+              </div>
+
+              {/* Menu items */}
+              <div className="py-1">
+                <button
+                  onClick={handleSettings}
+                  className="w-full flex items-center gap-3 px-4 py-2.5
+                    text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Settings className="w-4 h-4 text-gray-400" />
+                  Settings
+                </button>
+
+                <div className="border-t border-gray-100 my-1" />
+
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center gap-3 px-4 py-2.5
+                    text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign out
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   )
