@@ -31,6 +31,7 @@ export default function LoginPage() {
     router.refresh()
   }
 
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm space-y-6">
