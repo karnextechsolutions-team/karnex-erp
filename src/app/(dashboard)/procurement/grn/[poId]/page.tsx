@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { ArrowLeft, PackagePlus, AlertCircle, Save, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, PackagePlus, AlertCircle, Save, CheckCircle2, HandHeartIcon } from 'lucide-react'
 import { createNotification } from '@/lib/notifications'
 import type { PurchaseOrder, Supplier, POItem, RawMaterial } from '@/types/database'
 
