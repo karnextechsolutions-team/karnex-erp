@@ -42,7 +42,8 @@ type FullSOItem = SOItem & { products?: Product | null }
 const statusStyles: Record<SOStatus, string> = {
   draft:      'bg-slate-100 text-slate-600',
   confirmed:  'bg-blue-100 text-blue-700',
-  dispatched: 'bg-amber-100 text-amber-700',
+  'Pending QA': 'bg-purple-100 text-purple-700',
+  Dispatched: 'bg-amber-100 text-amber-700',
   delivered:  'bg-emerald-100 text-emerald-700',
   cancelled:  'bg-red-100 text-red-600',
 }
@@ -50,7 +51,7 @@ const statusStyles: Record<SOStatus, string> = {
 function StatusBadge({ status }: { status: SOStatus }) {
   const labels: Record<SOStatus, string> = {
     draft: 'Draft', confirmed: 'Confirmed',
-    dispatched: 'Dispatched', delivered: 'Delivered', cancelled: 'Cancelled',
+    'Pending QA': 'Pending QA', Dispatched: 'Dispatched', delivered: 'Delivered', cancelled: 'Cancelled',
   }
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statusStyles[status]}`}>
@@ -77,12 +78,12 @@ function InfoRow({ label, value, icon: Icon }: { label: string; value: React.Rea
 // ---------------------------------------------------------------------------
 // Status progression
 // ---------------------------------------------------------------------------
-const STATUS_FLOW: SOStatus[] = ['draft', 'confirmed', 'dispatched', 'delivered']
+const STATUS_FLOW: SOStatus[] = ['draft', 'confirmed', 'Pending QA', 'Dispatched', 'delivered']
 
 const nextStatusConfig: Partial<Record<SOStatus, { label: string; next: SOStatus; icon: React.ElementType; variant: 'default' | 'outline' }>> = {
   draft:      { label: 'Confirm Order',   next: 'confirmed',  icon: CheckCircle2, variant: 'default'  },
-  confirmed:  { label: 'Mark Dispatched', next: 'dispatched', icon: Truck,        variant: 'default'  },
-  dispatched: { label: 'Mark Delivered',  next: 'delivered',  icon: PackageCheck, variant: 'default'  },
+  confirmed:  { label: 'Mark Dispatched', next: 'Dispatched', icon: Truck, variant: 'default'  },
+  Dispatched: { label: 'Mark Delivered',  next: 'delivered',  icon: PackageCheck, variant: 'default'  },
 }
 
 // ---------------------------------------------------------------------------

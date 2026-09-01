@@ -65,7 +65,8 @@ type CustomerType = Customer['type']
 const soStatusStyles: Record<SOStatus, string> = {
   draft:      'bg-slate-100 text-slate-600',
   confirmed:  'bg-blue-100 text-blue-700',
-  dispatched: 'bg-amber-100 text-amber-700',
+  'Pending QA': 'bg-purple-100 text-purple-700',
+  Dispatched: 'bg-amber-100 text-amber-700',
   delivered:  'bg-emerald-100 text-emerald-700',
   cancelled:  'bg-red-100 text-red-600',
 }
@@ -80,7 +81,7 @@ const invStatusStyles: Record<InvStatus, string> = {
 
 function SOBadge({ status }: { status: SOStatus }) {
   const labels: Record<SOStatus, string> = {
-    draft: 'Draft', confirmed: 'Confirmed', dispatched: 'Dispatched',
+    draft: 'Draft', confirmed: 'Confirmed', 'Pending QA': 'Pending QA', Dispatched: 'Dispatched',
     delivered: 'Delivered', cancelled: 'Cancelled',
   }
   return (
@@ -302,7 +303,7 @@ export default function CustomerDetailPage() {
           .from('payments')
           .select('*')
           .in('invoice_id', invIds)
-          .order('payment_date', { ascending: false })
+          .order('created_at', { ascending: false })
         setPayments((payData as Payment[]) ?? [])
       }
     }
@@ -313,7 +314,8 @@ export default function CustomerDetailPage() {
   useEffect(() => { load() }, [load])
 
   // ── Computed stats ────────────────────────────────────────────────────────
-  const totalRevenue      = orders.reduce((s, o) => s + Number(o.total_amount), 0)
+  const totalInvoiced = invoices.reduce((s, i) => s + Number(i.total_amount), 0)
+  const totalReceived = payments.reduce((s, p) => s + Number(p.amount), 0)
   const outstandingBalance = invoices
     .filter((i) => i.status !== 'paid' && i.status !== 'cancelled')
     .reduce((s, i) => s + Number(i.balance), 0)
@@ -363,12 +365,16 @@ export default function CustomerDetailPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatsCard title="Total Orders"      value={orders.length}                  icon={ShoppingCart} iconColor="text-slate-600" />
-        <StatsCard title="Total Invoices"    value={invoices.length}                icon={FileText}     iconColor="text-blue-600" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <StatsCard
-          title="Total Revenue"
-          value={`${cur} ${totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+          title="Total Invoiced"
+          value={`${cur} ${totalInvoiced.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+          icon={FileText}
+          iconColor="text-blue-600"
+        />
+        <StatsCard
+          title="Total Received"
+          value={`${cur} ${totalReceived.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
           icon={DollarSign}
           iconColor="text-emerald-600"
         />
@@ -423,13 +429,13 @@ export default function CustomerDetailPage() {
           <Tabs defaultValue="orders">
             <TabsList className="mb-4">
               <TabsTrigger value="orders">
-                Sales Orders <span className="ml-1.5 text-xs text-slate-400">({orders.length})</span>
+                Order History <span className="ml-1.5 text-xs text-slate-400">({orders.length})</span>
               </TabsTrigger>
               <TabsTrigger value="invoices">
-                Invoices <span className="ml-1.5 text-xs text-slate-400">({invoices.length})</span>
+                Outstanding Invoices <span className="ml-1.5 text-xs text-slate-400">({invoices.filter((i) => i.status !== 'paid' && i.status !== 'cancelled').length})</span>
               </TabsTrigger>
               <TabsTrigger value="payments">
-                Payments <span className="ml-1.5 text-xs text-slate-400">({payments.length})</span>
+                Payment History <span className="ml-1.5 text-xs text-slate-400">({payments.length})</span>
               </TabsTrigger>
             </TabsList>
 
@@ -491,7 +497,7 @@ export default function CustomerDetailPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-200">
-                        {['Invoice No.', 'Date', 'Due Date', 'Total', 'Paid', 'Balance', 'Status'].map((h) => (
+                        {['Invoice No.', 'Date', 'Due Date', 'Total', 'Paid', 'Balance', 'Status', 'Action'].map((h) => (
                           <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
                             {h}
                           </th>
@@ -499,7 +505,7 @@ export default function CustomerDetailPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {invoices.map((inv) => {
+                      {invoices.filter(i => i.status !== 'paid' && i.status !== 'cancelled').map((inv) => {
                         const isOverdue = inv.status === 'overdue' || inv.status === 'unpaid'
                         return (
                           <tr key={inv.id} className={`transition-colors ${isOverdue && Number(inv.balance) > 0 ? 'bg-red-50/30' : 'hover:bg-slate-50/60'}`}>
@@ -518,6 +524,13 @@ export default function CustomerDetailPage() {
                               {cur} {Number(inv.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </td>
                             <td className="px-4 py-3"><InvBadge status={inv.status} /></td>
+                            <td className="px-4 py-3">
+                              <Link href={`/payments/new?invoice_id=${inv.id}`}>
+                                <Button variant="outline" size="xs" className="h-7 text-xs">
+                                  <Banknote className="w-3 h-3 mr-1" />Pay
+                                </Button>
+                              </Link>
+                            </td>
                           </tr>
                         )
                       })}
@@ -535,7 +548,7 @@ export default function CustomerDetailPage() {
                         <td className="px-4 py-2.5 text-sm font-semibold text-red-600">
                           {cur} {invoices.reduce((s, i) => s + Number(i.balance), 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </td>
-                        <td />
+                        <td colSpan={2} />
                       </tr>
                     </tfoot>
                   </table>
@@ -555,7 +568,7 @@ export default function CustomerDetailPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-200">
-                        {['Date', 'Amount', 'Method', 'Reference', 'Notes'].map((h) => (
+                        {['Date', 'Amount', 'Method', 'Reference', 'Status'].map((h) => (
                           <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
                             {h}
                           </th>
@@ -565,7 +578,7 @@ export default function CustomerDetailPage() {
                     <tbody className="divide-y divide-slate-100">
                       {payments.map((p) => (
                         <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
-                          <td className="px-4 py-3 text-slate-600">{format(new Date(p.payment_date), 'dd MMM yyyy')}</td>
+                          <td className="px-4 py-3 text-slate-600">{format(new Date(p.created_at), 'dd MMM yyyy')}</td>
                           <td className="px-4 py-3 font-semibold text-emerald-700">
                             {cur} {Number(p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </td>
@@ -576,8 +589,8 @@ export default function CustomerDetailPage() {
                               </span>
                             ) : '—'}
                           </td>
-                          <td className="px-4 py-3 font-mono text-xs text-slate-500">{p.reference ?? '—'}</td>
-                          <td className="px-4 py-3 text-slate-500">{p.notes ?? '—'}</td>
+                          <td className="px-4 py-3 font-mono text-xs text-slate-500">{p.transaction_reference ?? '—'}</td>
+                          <td className="px-4 py-3 text-slate-500">{p.status}</td>
                         </tr>
                       ))}
                     </tbody>

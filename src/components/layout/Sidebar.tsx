@@ -4,21 +4,25 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Package2, LayoutDashboard, ShoppingCart, Warehouse,
-  Settings2, Users, BarChart3, Factory, TruckIcon, ChevronRight, XIcon, DollarSign, X
+  Settings2, Users, BarChart3, Factory, TruckIcon, ChevronRight, XIcon, DollarSign, X, Banknote, ClipboardList
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Profile } from '@/types/database'
 import { COMPANY } from '@/lib/company'
 
 const navItems = [
-  { href: '/',            label: 'Dashboard',   icon: LayoutDashboard, roles: ['admin','manager','procurement','production','sales','viewer'] },
+  { href: '/',            label: 'Dashboard',   icon: LayoutDashboard, roles: ['admin','manager','procurement','production','sales','viewer','qa','finance','hr'] },
   { href: '/procurement', label: 'Procurement',  icon: TruckIcon,       roles: ['admin','manager','procurement'] },
-  { href: '/inventory',   label: 'Inventory',    icon: Warehouse,       roles: ['admin','manager','procurement','production'] },
-  { href: '/production',  label: 'Production',   icon: Factory,         roles: ['admin','manager','production'] },
+  { href: '/suppliers',   label: 'Suppliers',    icon: TruckIcon,       roles: ['admin','manager','procurement'] },
+  { href: '/inventory',   label: 'Inventory',    icon: Warehouse,       roles: ['admin','manager','procurement','production','qa'] },
+  { href: '/production',  label: 'Production',   icon: Factory,         roles: ['admin','manager','production','qa'] },
   { href: '/sales',       label: 'Sales',        icon: ShoppingCart,    roles: ['admin','manager','sales'] },
+  { href: '/sales/dispatch', label: 'Dispatch QA', icon: TruckIcon,     roles: ['admin','manager','sales','qa'] },
   { href: '/customers',   label: 'Customers',    icon: Users,           roles: ['admin','manager','sales'] },
-  { href: '/finance',     label: 'Finance',      icon: DollarSign,      roles: ['admin','manager'] },
-  { href: '/reports',     label: 'Reports',      icon: BarChart3,       roles: ['admin','manager'] },
+  { href: '/finance',     label: 'Finance',      icon: Banknote,   roles: ['admin','md'] },
+  { href: '/reports',     label: 'Reports',      icon: BarChart3,       roles: ['admin','manager','finance'] },
+  { href: '/requisitions', label: 'Requisitions', icon: ClipboardList, roles: ['admin','manager','procurement','production','sales','qa','viewer'] },
+  { href: '/hr',          label: 'HR & Payroll', icon: Users,           roles: ['admin','hr'] },
   { href: '/settings',    label: 'Settings',     icon: Settings2,       roles: ['admin'] },
 ]
 
@@ -30,7 +34,7 @@ interface SidebarProps {
 
 export default function Sidebar({ profile, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
-  const role = profile?.role ?? 'viewer'
+  const role = (profile?.role ?? 'viewer').toLowerCase()
 
   const allowed = navItems.filter(item => item.roles.includes(role))
 

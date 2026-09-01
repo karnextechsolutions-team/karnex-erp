@@ -3,32 +3,52 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { Search, Plus, Edit2, X, Users, Globe, Building2 } from 'lucide-react'
+import { Search, Plus, Edit2, X, Users, Globe, Building2, Eye } from 'lucide-react'
+import Link from 'next/link'
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<any[]>([])
+  const [salesReps, setSalesReps] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [editCustomer, setEditCustomer] = useState<any>(null)
   const [saving, setSaving] = useState(false)
+  
   const [form, setForm] = useState({
     name: '', type: 'local', contact_person: '', phone: '',
     email: '', address: '', country: 'Sri Lanka',
-    currency: 'LKR', credit_limit: 0, payment_terms: 'Net 30'
+    currency: 'LKR', credit_limit: 0, payment_terms: 'Net 30',
+    sales_rep_id: ''
   })
 
   const fetchCustomers = async () => {
     setLoading(true)
     const supabase = createClient()
-    const { data } = await supabase.from('customers').select('*').order('name')
+    const { data } = await supabase
+      .from('customers')
+      .select('*, profiles(full_name)')
+      .order('name')
     setCustomers(data ?? [])
     setLoading(false)
   }
 
+  const fetchSalesReps = async () => {
+    try {
+      const res = await fetch('/api/users?role=SALES')
+      if (res.ok) {
+        const data = await res.json()
+        setSalesReps(data.users || [])
+      }
+    } catch (err) {
+      console.error('Failed to load sales representatives:', err)
+    }
+  }
+
   useEffect(() => {
     fetchCustomers()
+    fetchSalesReps()
   }, [])
 
   const filtered = customers.filter(c => {
@@ -46,15 +66,48 @@ export default function CustomersPage() {
     
     setSaving(true)
     const supabase = createClient()
+
+    // Sanitize payload to exclude relation objects and non-updateable database fields
+    const payload = {
+      name: form.name,
+      type: form.type,
+      contact_person: form.contact_person || null,
+      phone: form.phone || null,
+      email: form.email || null,
+      address: form.address || null,
+      country: form.country,
+      currency: form.currency,
+      credit_limit: form.credit_limit,
+      payment_terms: form.payment_terms,
+      sales_rep_id: form.sales_rep_id || null
+    }
     
     if (editCustomer) {
-      const { error } = await supabase.from('customers').update({...form}).eq('id', editCustomer.id)
-      if (error) toast.error('Failed to update: ' + error.message)
-      else { toast.success('Customer updated!'); fetchCustomers(); setShowAddDialog(false) }
+      const { error } = await supabase.from('customers').update(payload).eq('id', editCustomer.id)
+      if (error) {
+        toast.error('Failed to update: ' + error.message)
+      } else {
+        toast.success('Customer updated!')
+        fetchCustomers()
+        setShowAddDialog(false)
+      }
     } else {
-      const { error } = await supabase.from('customers').insert({...form, is_active: true})
-      if (error) toast.error('Failed to add: ' + error.message)
-      else { toast.success('Customer added!'); fetchCustomers(); setShowAddDialog(false) }
+      try {
+        const res = await fetch('/api/customers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        const result = await res.json()
+        if (!res.ok) {
+          throw new Error(result.error || 'Failed to add customer')
+        }
+        toast.success('Customer added!')
+        fetchCustomers()
+        setShowAddDialog(false)
+      } catch (err: any) {
+        toast.error(err.message)
+      }
     }
     setSaving(false)
   }
@@ -75,11 +128,12 @@ export default function CustomersPage() {
             setForm({
               name: '', type: 'local', contact_person: '', phone: '',
               email: '', address: '', country: 'Sri Lanka',
-              currency: 'LKR', credit_limit: 0, payment_terms: 'Net 30'
+              currency: 'LKR', credit_limit: 0, payment_terms: 'Net 30',
+              sales_rep_id: ''
             })
             setShowAddDialog(true)
           }}
-          className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+          className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" /> Add Customer
         </button>
@@ -87,21 +141,21 @@ export default function CustomersPage() {
 
       {/* STATS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total Customers</p>
             <p className="text-2xl font-semibold text-gray-900 mt-1">{customers.length}</p>
           </div>
           <div className="p-3 bg-gray-50 text-gray-600 rounded-lg"><Users className="w-6 h-6" /></div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Local</p>
             <p className="text-2xl font-semibold text-gray-900 mt-1">{customers.filter(c => c.type === 'local').length}</p>
           </div>
           <div className="p-3 bg-blue-50 text-blue-600 rounded-lg"><Building2 className="w-6 h-6" /></div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Export</p>
             <p className="text-2xl font-semibold text-gray-900 mt-1">{customers.filter(c => c.type === 'export').length}</p>
@@ -116,7 +170,7 @@ export default function CustomersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
-            placeholder="Search customers..."
+            placeholder="Search customers by name, contact or email..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -137,7 +191,7 @@ export default function CustomersPage() {
       </div>
 
       {/* TABLE */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         {loading ? (
           <div className="p-8 text-center text-sm text-gray-400">Loading customers...</div>
         ) : filtered.length === 0 ? (
@@ -148,7 +202,7 @@ export default function CustomersPage() {
         ) : (
           <>
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse border-spacing-0">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</th>
@@ -156,6 +210,7 @@ export default function CustomersPage() {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Country</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Contact</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Phone</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Sales Rep</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Currency</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Credit Limit</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
@@ -174,11 +229,41 @@ export default function CustomersPage() {
                       <td className="px-4 py-3 text-sm text-gray-700">{c.country || '—'}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{c.contact_person || '—'}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{c.phone || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {c.profiles?.full_name ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+                            {c.profiles.full_name}
+                          </span>
+                        ) : '—'}
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-700">{c.currency || '—'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900 font-medium text-right">{fmtLKR(c.credit_limit)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 font-semibold text-right">{fmtLKR(c.credit_limit)}</td>
                       <td className="px-4 py-3 text-sm text-right">
+                        <Link
+                          href={`/customers/${c.id}`}
+                          className="p-1.5 text-gray-400 hover:text-green-600 transition-colors inline-block mr-2"
+                          title="View Profile"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
                         <button
-                          onClick={() => { setEditCustomer(c); setForm(c); setShowAddDialog(true) }}
+                          onClick={() => {
+                            setEditCustomer(c)
+                            setForm({
+                              name: c.name || '',
+                              type: c.type || 'local',
+                              contact_person: c.contact_person || '',
+                              phone: c.phone || '',
+                              email: c.email || '',
+                              address: c.address || '',
+                              country: c.country || 'Sri Lanka',
+                              currency: c.currency || 'LKR',
+                              credit_limit: c.credit_limit || 0,
+                              payment_terms: c.payment_terms || 'Net 30',
+                              sales_rep_id: c.sales_rep_id || ''
+                            })
+                            setShowAddDialog(true)
+                          }}
                           className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
                           title="Edit"
                         >
@@ -206,11 +291,36 @@ export default function CustomersPage() {
                   <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mb-3">
                     <div><span className="text-gray-400">Country: </span>{c.country || '—'}</div>
                     <div><span className="text-gray-400">Phone: </span>{c.phone || '—'}</div>
+                    <div className="col-span-2"><span className="text-gray-400">Sales Rep: </span>{c.profiles?.full_name || '—'}</div>
                     <div className="col-span-2"><span className="text-gray-400">Credit: </span><span className="font-semibold text-gray-900">{fmtLKR(c.credit_limit)}</span> ({c.currency || '—'})</div>
                   </div>
-                  <div className="flex pt-3 border-t border-gray-100">
-                    <button onClick={() => { setEditCustomer(c); setForm(c); setShowAddDialog(true) }}
-                      className="flex-1 text-xs border border-gray-200 text-gray-600 py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-gray-50">
+                  <div className="flex pt-3 border-t border-gray-100 gap-2">
+                    <Link
+                      href={`/customers/${c.id}`}
+                      className="flex-1 text-xs border border-gray-200 text-gray-600 py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-gray-50"
+                    >
+                      <Eye className="w-3.5 h-3.5" /> View
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setEditCustomer(c)
+                        setForm({
+                          name: c.name || '',
+                          type: c.type || 'local',
+                          contact_person: c.contact_person || '',
+                          phone: c.phone || '',
+                          email: c.email || '',
+                          address: c.address || '',
+                          country: c.country || 'Sri Lanka',
+                          currency: c.currency || 'LKR',
+                          credit_limit: c.credit_limit || 0,
+                          payment_terms: c.payment_terms || 'Net 30',
+                          sales_rep_id: c.sales_rep_id || ''
+                        })
+                        setShowAddDialog(true)
+                      }}
+                      className="flex-1 text-xs border border-gray-200 text-gray-600 py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-gray-50"
+                    >
                       <Edit2 className="w-3.5 h-3.5" /> Edit
                     </button>
                   </div>
@@ -235,7 +345,7 @@ export default function CustomersPage() {
             </div>
             <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Name *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Name *</label>
                 <input
                   required
                   value={form.name} onChange={e => setForm({...form, name: e.target.value})}
@@ -245,7 +355,7 @@ export default function CustomersPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Type</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Type</label>
                   <select
                     value={form.type} onChange={e => setForm({...form, type: e.target.value})}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
@@ -255,7 +365,7 @@ export default function CustomersPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Contact Person</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Contact Person</label>
                   <input
                     value={form.contact_person} onChange={e => setForm({...form, contact_person: e.target.value})}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
@@ -265,14 +375,14 @@ export default function CustomersPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Phone</label>
                   <input
                     value={form.phone} onChange={e => setForm({...form, phone: e.target.value})}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
                   <input
                     type="email"
                     value={form.email} onChange={e => setForm({...form, email: e.target.value})}
@@ -282,7 +392,7 @@ export default function CustomersPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Address</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Address</label>
                 <input
                   value={form.address} onChange={e => setForm({...form, address: e.target.value})}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
@@ -291,14 +401,14 @@ export default function CustomersPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Country</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Country</label>
                   <input
                     value={form.country} onChange={e => setForm({...form, country: e.target.value})}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Currency</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Currency</label>
                   <select
                     value={form.currency} onChange={e => setForm({...form, currency: e.target.value})}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
@@ -314,7 +424,7 @@ export default function CustomersPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Credit Limit (LKR)</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Credit Limit (LKR)</label>
                   <input
                     type="number" min="0" step="any"
                     value={form.credit_limit} onChange={e => setForm({...form, credit_limit: parseFloat(e.target.value) || 0})}
@@ -322,7 +432,7 @@ export default function CustomersPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Terms</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Payment Terms</label>
                   <select
                     value={form.payment_terms} onChange={e => setForm({...form, payment_terms: e.target.value})}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
@@ -336,11 +446,28 @@ export default function CustomersPage() {
                 </div>
               </div>
 
+              {/* Assigned Sales Representative Field */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Assigned Sales Rep</label>
+                <select
+                  value={form.sales_rep_id || ''}
+                  onChange={e => setForm({...form, sales_rep_id: e.target.value})}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+                >
+                  <option value="">Select Sales Rep...</option>
+                  {salesReps.map(rep => (
+                    <option key={rep.id} value={rep.id}>
+                      {rep.full_name} ({rep.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="flex gap-3 pt-4 mt-6 border-t border-gray-100">
                 <button type="button" onClick={() => setShowAddDialog(false)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
                   Cancel
                 </button>
-                <button type="submit" disabled={saving} className="flex-1 bg-green-700 hover:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
+                <button type="submit" disabled={saving} className="flex-1 bg-green-700 hover:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors">
                   {saving ? 'Saving...' : 'Save Customer'}
                 </button>
               </div>

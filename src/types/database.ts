@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'manager' | 'procurement' | 'production' | 'sales' | 'viewer'
+export type UserRole = 'admin' | 'manager' | 'procurement' | 'production' | 'sales' | 'viewer' | 'ADMIN' | 'SALES' | 'PROCUREMENT' | 'QA' | 'PRODUCTION' | 'FINANCE' | 'HR' | 'qa' | 'finance' | 'hr'
 
 export type Profile = {
   id: string
@@ -11,6 +11,57 @@ export type Profile = {
   updated_at: string
 }
 
+export type Employee = {
+  id: string
+  name: string
+  emp_number: string
+  designation: string | null
+  department: string | null
+  contact_number: string | null
+  basic_salary: number
+  joined_date: string
+  status: 'Active' | 'Inactive'
+  created_at: string
+  updated_at: string
+}
+
+export type Attendance = {
+  id: string
+  employee_id: string
+  date: string
+  check_in_time: string | null
+  check_out_time: string | null
+  status: 'Present' | 'Absent' | 'Half-Day'
+  created_at: string
+  employees?: Employee
+}
+
+export type Leave = {
+  id: string
+  employee_id: string
+  leave_type: 'Annual' | 'Casual' | 'Medical' | 'No-Pay'
+  start_date: string
+  end_date: string
+  reason: string | null
+  status: 'Pending' | 'Approved' | 'Rejected'
+  created_at: string
+  updated_at: string
+  employees?: Employee
+}
+
+export type Payslip = {
+  id: string
+  employee_id: string
+  month_year: string
+  basic_amount: number
+  allowances: number
+  deductions: number
+  net_salary: number
+  status: 'Generated' | 'Paid'
+  created_at: string
+  employees?: Employee
+}
+
 export type Supplier = {
   id: string
   name: string
@@ -19,10 +70,15 @@ export type Supplier = {
   email: string | null
   address: string | null
   country: string
-  payment_terms: string
+  category: 'Organic' | 'Conventional' | 'Traders'
+  payment_terms: '7 Days' | '30 Days'
   rating: number | null
   notes: string | null
   is_active: boolean
+  bank_name: string | null
+  account_name: string | null
+  account_number: string | null
+  branch: string | null
   created_at: string
   updated_at: string
 }
@@ -36,6 +92,7 @@ export type RawMaterial = {
   reorder_point: number
   notes: string | null
   is_active: boolean
+  quantity_in_stock: number
   created_at: string
   updated_at: string
 }
@@ -49,9 +106,13 @@ export type PurchaseOrder = {
   expected_date: string | null
   status: 'draft' | 'sent' | 'partial' | 'received' | 'cancelled'
   approval_status: 'pending' | 'approved' | 'rejected'
+  md_approval_status: 'Pending' | 'Approved' | 'Rejected'
+  approved_by: string | null
+  approved_at: string | null
   currency: string
   total_amount: number
   notes: string | null
+  payment_status: 'Unpaid' | 'Partial' | 'Paid'
   created_at: string
   updated_at: string
   suppliers?: Supplier
@@ -82,6 +143,78 @@ export type GoodsReceipt = {
   profiles?: Profile
 }
 
+export type GRN = {
+  id: string
+  grn_number: string
+  po_id: string | null
+  supplier_id: string
+  received_date: string
+  vehicle_number: string | null
+  status: 'QA Passed' | 'QA Failed' | 'Pending'
+  created_at: string
+  updated_at: string
+  suppliers?: Supplier
+}
+
+export type GRNItem = {
+  id: string
+  grn_id: string
+  material_id: string
+  received_qty: number
+  unit_price: number
+  total_price: number
+  created_at: string
+  raw_materials?: RawMaterial
+}
+
+export type BOM = {
+  id: string
+  product_id: string
+  name: string
+  status: 'Active' | 'Inactive'
+  created_at: string
+  updated_at: string
+  products?: Product
+}
+
+export type BOMItem = {
+  id: string
+  bom_id: string
+  material_id: string
+  quantity_required: number
+  created_at: string
+  raw_materials?: RawMaterial
+}
+
+export type ProductionOrder = {
+  id: string
+  order_number: string
+  bom_id: string
+  quantity_to_produce: number
+  status: 'Draft' | 'In Progress' | 'Completed'
+  produced_date: string | null
+  created_at: string
+  updated_at: string
+  boms?: BOM
+}
+
+export type QAReceivingCheck = {
+  id: string
+  grn_id: string
+  supplier_approved: boolean
+  vehicle_condition_ok: boolean
+  packaging_ok: boolean
+  label_verified: boolean
+  visual_quality_ok: boolean
+  pest_free: boolean
+  moisture_ok: boolean
+  no_chemical_contamination: boolean
+  docs_verified: boolean
+  sampling_tested: boolean
+  remarks: string | null
+  created_at: string
+}
+
 export type InventoryStock = {
   id: string
   material_id: string
@@ -105,6 +238,7 @@ export type Product = {
   cost_price: number | null
   description: string | null
   is_active: boolean
+  quantity_in_stock: number
   created_at: string
   updated_at: string
 }
@@ -153,16 +287,53 @@ export type Customer = {
   is_active: boolean
   created_at: string
   updated_at: string
+  sales_rep_id: string | null
+  profiles?: Profile | null
+}
+
+export type Quotation = {
+  id: string
+  quotation_number: string
+  customer_id: string
+  created_by: string
+  valid_until: string
+  total_amount: number
+  md_approval_status: 'Draft' | 'Pending Approval' | 'Approved' | 'Rejected'
+  status: 'Active' | 'Converted to SO' | 'Expired'
+  created_at: string
+  updated_at: string
+  customers?: Customer
+  profiles?: Profile
+  category_type?: 'Conventional' | 'Organic' | 'Fairtrade' | 'Organic & Fairtrade'
+  dispatch_no?: string | null
+  place_of_supply?: string | null
+  courier_charge?: number
+  tc_charge?: number
+  mode_of_payment?: string | null
+}
+
+export type QuotationItem = {
+  id: string
+  quotation_id: string
+  item_id: string
+  quantity: number
+  unit_price: number
+  total_price: number
+  created_at: string
+  raw_materials?: RawMaterial
+  reference_po?: string | null
+  cut_size?: string | null
 }
 
 export type SalesOrder = {
   id: string
+  quotation_id?: string | null
   so_number: string
   customer_id: string
   created_by: string
   order_date: string
   delivery_date: string | null
-  status: 'draft' | 'confirmed' | 'dispatched' | 'delivered' | 'cancelled'
+  status: 'draft' | 'confirmed' | 'Pending QA' | 'Dispatched' | 'delivered' | 'cancelled'
   approval_status: 'pending' | 'approved' | 'rejected'
   currency: string
   exchange_rate: number
@@ -188,6 +359,24 @@ export type SOItem = {
   products?: Product
 }
 
+export type OutboundQACheck = {
+  id: string
+  so_id: string
+  metal_inspection: boolean
+  moisture_testing: boolean
+  visual_quality: boolean
+  sensory_testing: boolean
+  foreign_matter: boolean
+  packing_material: boolean
+  pest_inspection: boolean
+  sealing_condition: boolean
+  label_accuracy: boolean
+  compliant_with_coa: boolean
+  remarks: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type Invoice = {
   id: string
   invoice_number: string
@@ -202,6 +391,21 @@ export type Invoice = {
   created_at: string
   updated_at: string
   sales_orders?: SalesOrder
+}
+
+export type Payment = {
+  id: string
+  type: 'Inbound' | 'Outbound'
+  invoice_id: string | null
+  po_id: string | null
+  amount: number
+  payment_method: 'Cash' | 'Cheque' | 'Bank Transfer'
+  transaction_reference: string | null
+  status: 'Pending Approval' | 'Approved' | 'Rejected'
+  created_at: string
+  updated_at: string
+  invoices?: Invoice
+  purchase_orders?: PurchaseOrder
 }
 
 export type FinishedGoodsStock = {
@@ -233,18 +437,6 @@ export type StockMovement = {
   products?: Product
 }
 
-export type Payment = {
-  id: string
-  invoice_id: string
-  amount: number
-  payment_date: string
-  payment_method: string | null
-  reference: string | null
-  notes: string | null
-  created_at: string
-  invoices?: Invoice
-}
-
 export type Expense = {
   id: string
   category: string
@@ -267,6 +459,35 @@ export type Notification = {
   created_at: string
 }
 
+export type MaterialRequisition = {
+  id: string
+  mrn_number: string
+  user_id: string
+  department: string
+  status: 'Pending' | 'Issued' | 'Rejected'
+  requested_date: string
+  updated_at: string
+  profiles?: Profile
+}
+
+export type MRNItem = {
+  id: string
+  mrn_id: string
+  item_id: string
+  requested_qty: number
+  issued_qty: number | null
+  raw_materials?: RawMaterial
+}
+export type DirectReceipt = {
+  id: string
+  item_id: string
+  supplier_id: string | null
+  received_qty: number
+  unit_cost: number
+  received_date: string
+  remarks: string | null
+  created_at: string
+}
 
 export interface Database {
   public: {
@@ -290,6 +511,8 @@ export interface Database {
       finished_goods_stock: { Row: FinishedGoodsStock; Insert: Partial<FinishedGoodsStock>; Update: Partial<FinishedGoodsStock> }
       stock_movements: { Row: StockMovement; Insert: Partial<StockMovement>; Update: Partial<StockMovement> }
       notifications: { Row: Notification; Insert: Partial<Notification>; Update: Partial<Notification> }
+      quotations: { Row: Quotation; Insert: Partial<Quotation>; Update: Partial<Quotation> }
+      quotation_items: { Row: QuotationItem; Insert: Partial<QuotationItem>; Update: Partial<QuotationItem> }
     }
   }
 }
